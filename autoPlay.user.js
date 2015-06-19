@@ -435,6 +435,8 @@
 			
 			// This belongs here so we can update the header during boss fights
 			updateLevelInfoTitle(level);
+            
+            removeAutoDPSUpgrades();
 
 			currentClickRate = getWantedClicksPerSecond();
 			s().m_nClicks = currentClickRate;
@@ -900,6 +902,20 @@
 		}
 	}
 
+	function removeAutoDPSUpgrades() {
+	    var upgrades = w.g_Minigame.CurrentScene().m_rgTuningData.upgrades;
+
+	    jQuery('.container_upgrades > div').each(function (index) {
+	        // Step through each upgrade in the list, find the button and get the type of upgrade (index of upgrade list)
+	        var upgradeIndex = jQuery(this).find('a').data('type');
+
+            // If the upgrade is an auto DPS type, remove the div from the list so we remove all chances of it being clicked
+	        if (upgradeIndex < upgrades.length && upgrades[upgradeIndex].type === 1) {
+	            jQuery(this).remove();
+	        }
+	    });
+	}
+
 	function displayText(x, y, strText, color) {
 		var text = new w.PIXI.Text(strText, {
 			font: "35px 'Press Start 2P'",
@@ -1343,9 +1359,13 @@
 	}
 
 	function useWormholeIfRelevant() {
+		var elapsed_seconds = (getCurrentTime() - s().m_rgGameData.timestamp_game_start);
+		var remaining_seconds =  86400 - elapsed_seconds;
+		var remaining_wormholes = getItemCount(ABILITIES.WORMHOLE);
+		
 		// Check the time before using wormhole.
 		var level = getGameLevel();
-		if (level % control.rainingRounds !== 0 && !wormHoleConstantUse) {
+		if (level % control.rainingRounds !== 0 && !wormHoleConstantUse && remaining_seconds > remaining_wormholes) {
 			return;
 		}
 		
@@ -1494,6 +1514,16 @@
 			}
 		}
 		return false;
+	}
+	
+	function getItemCount(itemId) {
+		for (var i = 0; i < s().m_rgPlayerTechTree.ability_items.length; ++i) {
+			var abilityItem = s().m_rgPlayerTechTree.ability_items[i];
+			if (abilityItem.ability == itemId) {
+				return abilityItem.quantity;
+			}
+		}
+		return 0;
 	}
 
 	function tryUsingItem(itemId, checkInLane) {
